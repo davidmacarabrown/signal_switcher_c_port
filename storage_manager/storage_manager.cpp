@@ -65,6 +65,9 @@ BANK_DATA_X StorageManager::read_bank(uint8_t bank)
     read_bank.patch_array[3] = read_patch(bank, 3);
     read_bank.patch_array[4] = read_patch(bank, 4);
 
+    printf("StorageManager::read_bank()\n");
+    printf(" - Mask: %02X\n", read_bank.patch_array[0].output_mask);
+
     return read_bank;
 }
 
@@ -95,6 +98,7 @@ PATCH_DATA_X StorageManager::read_patch(uint8_t bank, uint8_t patch)
     read_patch.output_mask       = read_buffer[OUTPUT_BITMASK_OFFSET];
     read_patch.num_midi_pc       = read_buffer[PATCH_NUM_MIDI_PC_OFFSET];
     read_patch.num_midi_cc       = read_buffer[PATCH_NUM_MIDI_CC_OFFSET];
+
 
     
     /* MIDI Program Changes */
@@ -192,21 +196,26 @@ uint8_t StorageManager::write_patch_title(uint8_t bank, uint8_t patch, uint8_t* 
     return result;
 }
 
-uint8_t StorageManager::write_patch_switch_data(uint8_t bank, uint8_t patch, uint8_t output_mask)
+uint8_t StorageManager::write_patch_switch_data(void)
 {
     uint8_t result;
     //output mask
-    result = write_patch_output_mask(bank, patch, output_mask);
+    result = write_patch_output_mask();
     //TODO:ext ctrl
 
     return result;
 }
 
-uint8_t StorageManager::write_patch_output_mask(uint8_t bank, uint8_t patch, uint8_t output_mask)
+uint8_t StorageManager::write_patch_output_mask(void)
 {
     uint8_t result;
-    uint8_t byte_offset = PATCH_DATA_OFFSET + (bank * BANK_DATA_SIZE) + (patch * PATCH_DATA_SIZE) + OUTPUT_BITMASK_OFFSET;
-    result = eeprom.write_byte(output_mask, byte_offset);
+    uint8_t byte_offset = PATCH_DATA_OFFSET + ((pStateManager->get_active_bank()) * BANK_DATA_SIZE) + ((pStateManager->get_write_location()) * PATCH_DATA_SIZE) + PATCH_GENERAL_OFFSET + OUTPUT_BITMASK_OFFSET;
+
+    printf("StorageManager::write_patch_output_mask()\n");
+    printf(" - Bank: %d, Patch: %d, Mask: %02x\n", pStateManager->get_active_bank(), pStateManager->get_write_location(), pStateManager->get_output_mask());
+    
+    result = eeprom.write_byte(pStateManager->get_output_mask(), byte_offset);
+    printf("Readback: %02x\n", eeprom.read_byte(byte_offset));
     return result;
 }
 
@@ -225,6 +234,7 @@ uint8_t StorageManager::validate_eeprom(void)
     /* Check first 4 bytes of EEPROM for the boot flag */
     eeprom.read_multiple_bytes(BOOT_FLAG_OFFSET, BOOT_FLAG_SIZE, read_buffer);
 
+    //sleep_ms(5000);
     printf("Checking Boot Header:\n");
     print_buff(read_buffer, BOOT_FLAG_SIZE);
     fflush(stdout);
@@ -251,6 +261,7 @@ uint8_t StorageManager::validate_eeprom(void)
     if(header_not_found || footer_not_found)
     {
         // TODO: maybe put something in here to inform that the pedal is doing some "setup" or whatever
+        
         printf("First Boot!\n");
 
         /* Erase all 4096 bytes of EEPROM */
@@ -304,8 +315,8 @@ uint8_t StorageManager::validate_eeprom(void)
         memset(write_buffer, 0, SYSTEM_INFO_SIZE);
 
         write_buffer[0] = 0b00000000; // setting defaults for mode/ext ctrl A/B type
-        write_buffer[1] = 1;          // default bank: 1
-        write_buffer[2] = 1;          // default patch: 1
+        write_buffer[1] = 0;          // default bank: 1
+        write_buffer[2] = 0;          // default patch: 1
 
         printf("Sys Info Buffer:\n");
         print_buff(write_buffer, SYSTEM_INFO_SIZE); // remaining bytes reserved for IP address/other data in future
@@ -363,6 +374,8 @@ uint8_t StorageManager::validate_eeprom(void)
         write_buffer[3] = (uint8_t)(BOOT_FLAG);
 
         eeprom.write_multiple_bytes(write_buffer, BOOT_FLAG_END_OFFSET, BOOT_FLAG_SIZE);
+
+        //eeprom.write_byte(0x1F, PATCH_DATA_OFFSET + PATCH_GENERAL_OFFSET + OUTPUT_BITMASK_OFFSET);
 
         printf("All Readback:\n"); 
 

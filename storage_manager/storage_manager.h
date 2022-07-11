@@ -30,7 +30,7 @@ class StorageManager
         void read_system_data(void);
         void write_system_data(void); //TODO: maybe don't need this...
 
-        uint8_t write_patch_switch_data(uint8_t bank, uint8_t patch, uint8_t output_mask);
+        uint8_t write_patch_switch_data(void);
         BANK_DATA_X read_bank(uint8_t bank);
         PATCH_DATA_X read_patch(uint8_t bank, uint8_t patch);
 
@@ -39,7 +39,7 @@ class StorageManager
         uint8_t write_active_patch(uint8_t patch);
 
         uint8_t write_patch_title(uint8_t bank, uint8_t patch, uint8_t* title);
-        uint8_t write_patch_output_mask(uint8_t bank, uint8_t patch, uint8_t output_mask);
+        uint8_t write_patch_output_mask();
         uint8_t write_patch_midi_pc(uint8_t bank, uint8_t patch, uint8_t midi_pc_location, MIDI_PC_DATA_X x_midi_pc_data);
         uint8_t write_patch_midi_cc(uint8_t bank, uint8_t patch, uint8_t midi_cc_location, MIDI_CC_DATA_X x_midi_cc_data);
 

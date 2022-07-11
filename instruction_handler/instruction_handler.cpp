@@ -230,6 +230,7 @@ void InstructionHandler::mode_command_handler()
     {
         case MANUAL: // enter Program
             pStateManager->set_mode(PROGRAM);
+            pStateManager->load_output_state();
             break;
 
         case PROGRAM: // enter Manual
@@ -258,7 +259,7 @@ void InstructionHandler::mode_command_handler()
 
 void InstructionHandler::write_command_handler()
 {
-    char str[4];
+    static char *str;
     
     switch(pStateManager->get_mode())
     {
@@ -275,15 +276,16 @@ void InstructionHandler::write_command_handler()
             if(pStateManager->copy_output_state()) 
             {
                 /* if the write is readback successfully */
-                if(pStorageManager->write_patch_switch_data(pStateManager->get_active_bank(), pStateManager->get_write_location(), pStateManager->get_output_mask()) == 0)
+                if(pStorageManager->write_patch_switch_data() == 0)
                 {
                     pDisplayManager->clear();
-                    memcpy(str, ">OK<", 4);
+                    str = ">OK<";
                     pStateManager->set_mode(PROGRAM);
+                    pStateManager->set_active_patch(pStateManager->get_write_location());
                 }
                 else
                 {
-                    memcpy(str, "-Err", 4);
+                    str = "-Err";
                     pOutputManager->rapid_blink(LED_WRITE);
                 }
                 sleep_ms(500);

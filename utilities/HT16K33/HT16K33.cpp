@@ -134,8 +134,8 @@ Arguments: (const char*)
 Return:    void
 
 Loads buffer[] with LED data representing a 4 character string.
-Each character is converted from ASCII value to a 16Bit map by
-referencing the font table by index.
+Each character is converted from ASCII value to a 16Bit mask by
+character lookup.
 ****************************************************************/
 void HT16K33::load_string(char *str)
 {

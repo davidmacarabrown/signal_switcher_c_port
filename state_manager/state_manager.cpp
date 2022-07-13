@@ -45,6 +45,12 @@ void StateManager::load_memory_store(void)
     fflush(stdout);
     #endif
 
+    load_new_bank();
+}
+
+void StateManager::load_new_bank(void)
+{
+    printf("StateManager::load_new_bank()\n");
     loaded_bank = pStorageManager->read_bank(active_bank);
     #ifdef DEBUG
     printf(" - Loaded active bank: %d\n", active_bank);

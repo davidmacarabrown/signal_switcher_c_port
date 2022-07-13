@@ -211,13 +211,13 @@ typedef struct bank_data_x
 #define PATCH_GENERAL_SIZE           4
 
 #define PATCH_MIDI_PC_OFFSET         (PATCH_GENERAL_OFFSET + PATCH_GENERAL_SIZE)
-#define PATCH_MIDI_PC_SIZE           20
+#define PATCH_MIDI_PC_DATA_SIZE      20
 
 #define PATCH_MIDI_CC_DATA_OFFSET    (PATCH_MIDI_PC_OFFSET)
 #define PATCH_MIDI_CC_DATA_SIZE      30
 
-#define PATCH_DATA_SIZE              91
-#define BANK_DATA_SIZE               455
+#define PATCH_DATA_SIZE              (PATCH_TITLE_SIZE + PATCH_GENERAL_SIZE + PATCH_MIDI_PC_DATA_SIZE + PATCH_MIDI_CC_DATA_SIZE)
+#define BANK_DATA_SIZE               (PATCH_DATA_SIZE * NUM_PATCHES)
 
 
 /* i2c */

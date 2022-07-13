@@ -41,7 +41,7 @@ class StateManager
     public:
         void initialise(StorageManager *pStorageManager);
         void load_memory_store(void);
-
+        void load_new_bank(void);
         void toggle_single_output_state(uint8_t index);
         void load_output_state(void);
         bool copy_output_state(void);

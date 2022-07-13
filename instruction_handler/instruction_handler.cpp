@@ -64,7 +64,6 @@ void InstructionHandler::startup_routine(void)
                 break;
         }
         pOutputManager->update();
-        pDisplayManager->update_mode(mode); //TODO: Rework this not to need args?
         pDisplayManager->update();
     }
     else
@@ -124,7 +123,9 @@ void InstructionHandler::read_input(void)
 {
         sleep_ms(50);
         command_buffer.command = gpio_get_all() & GPIO_SWITCH_MASK;
+        #ifdef DEBUG
         printf("GPIO & MASK: %d\n", command_buffer.command);
+        #endif
 
         /* Set instruction_handler internal flag to true, set global flag back to false */
         *command_flag = false;
@@ -156,11 +157,17 @@ void InstructionHandler::process_command(void)
             case PATCH_INC_MASK:
                 /* do something manspider! */
                 pStateManager->increment_bank();
+                pStateManager->load_new_bank();
+                pStateManager->set_active_patch(5); //TODO: this is a placeholder for now
+                pDisplayManager->update();
                 break;
 
             case PATCH_DEC_MASK:
                 /* Execute order 66! */
                 pStateManager->decrement_bank();
+                pStateManager->load_new_bank();
+                pStateManager->set_active_patch(5); //TODO: this is a placeholder for now
+                pDisplayManager->update();
                 break; /* it will be done my lord */
 
             default:
@@ -177,8 +184,10 @@ void InstructionHandler::numerical_command_handler()
 {
     uint8_t array_pos;
 
+    #ifdef DEBUG
     printf("Numerical Handler\n");
     printf("Command: %d\n", command_buffer.command);
+    #endif
 
     /* Convert the captured bit mask value into a zero-indexed value to enable indexing of patch array locations */
     for(uint8_t i = 0; i < NUM_LOOPS; i++)
@@ -189,26 +198,35 @@ void InstructionHandler::numerical_command_handler()
             break; /* found what we need so break */
         }
     }
+
+#ifdef DEBUG
     printf("Mode: %d\n ", pStateManager->get_mode());
     printf("Single Input: %d\n", array_pos);
+#endif
 
     switch(pStateManager->get_mode())
     {
         /* Manual mode: change the state of one output and update */
         case MANUAL:
+        #ifdef DEBUG
             printf("Toggling: %d\n", array_pos);
+        #endif
             pStateManager->toggle_single_output_state(array_pos);
             break;
 
         /* Program mode: load the newly selected patch into the output state */
         case PROGRAM:
+        #ifdef DEBUG
             printf("Now Using Patch: %d - %s\n", (array_pos + 1), pStateManager->get_active_patch_title());
+        #endif
             pStateManager->set_active_patch(array_pos);
             pStateManager->load_output_state();
             break;
             
         case WRITE:
+        #ifdef DEBUG
             printf("Set Write Loc: %d\n", array_pos);
+        #endif
             pStateManager->set_write_location(array_pos);
             break;
     }
@@ -266,7 +284,6 @@ void InstructionHandler::write_command_handler()
         case MANUAL: // fall through
         case PROGRAM:
             pStateManager->set_mode(WRITE);
-            pDisplayManager->update_mode(WRITE);
             pStateManager->set_write_location(6);
             break;
 
@@ -279,13 +296,13 @@ void InstructionHandler::write_command_handler()
                 if(pStorageManager->write_patch_switch_data() == 0)
                 {
                     pDisplayManager->clear();
-                    str = ">OK<";
+                    memcpy(str, ">OK<", 4);
                     pStateManager->set_mode(PROGRAM);
                     pStateManager->set_active_patch(pStateManager->get_write_location());
                 }
                 else
                 {
-                    str = "-Err";
+                    memcpy(str, "-Err", 4);
                     pOutputManager->rapid_blink(LED_WRITE);
                 }
                 sleep_ms(500);
@@ -296,10 +313,6 @@ void InstructionHandler::write_command_handler()
                 memcpy(str, "Sel_", 4);
                 pDisplayManager->write_string(str);
                 sleep_ms(500);
-                pDisplayManager->clear();
-                pDisplayManager->update_mode(WRITE);
-                pDisplayManager->update_bank(pStateManager->get_active_bank());
-                pDisplayManager->write_character('_', 3);
             }
 
             //TODO: stuff here

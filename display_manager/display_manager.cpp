@@ -39,6 +39,11 @@ void DisplayManager::update(void)
 
     clear();
 
+    char lookup;
+    lookup = mode_lookup[mode];
+    write_character(lookup, 0);
+
+
     switch(mode)
     {
         case MANUAL:
@@ -48,10 +53,19 @@ void DisplayManager::update(void)
         case PROGRAM:
             write_character('-', 1);
             update_bank(pStateManager->get_active_bank());
-            update_patch(pStateManager->get_active_patch());
+            loc = pStateManager->get_active_patch();
+            if(loc < 5)
+            {
+                update_patch(loc);
+            }
+            else
+            {
+                write_character('_', 3);
+            }
             break;
 
         case WRITE:
+            write_character('-', 1);
             update_bank(pStateManager->get_active_bank());
             loc = pStateManager->get_write_location();
             if(loc < 6)
@@ -72,7 +86,6 @@ void DisplayManager::update(void)
             // no-op
             break;
     }
-    update_mode(mode);
     itsAlphaNumeric.update();
 }
 
@@ -102,26 +115,6 @@ void DisplayManager::update_bank(uint8_t value)
     found_value |= itsAlphaNumeric.character_lookup('.');
 
     itsAlphaNumeric.load_character_mask(found_value, 2);
-}
-
-void DisplayManager::update_mode(uint8_t value)
-{
-    char lookup;
-    lookup = mode_lookup[value];
-    write_character(lookup, 0);
-    
-    switch(value)
-    {
-        case PROGRAM:
-            write_character('-', 1);
-
-            break;
-        case WRITE:
-            write_character('-', 1);
-
-            break;
-    }
-
 }
 
 void DisplayManager::write_string(char *str)

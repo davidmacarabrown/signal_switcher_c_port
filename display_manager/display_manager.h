@@ -27,7 +27,6 @@ class DisplayManager
         void clear(void);
         void update_patch(uint8_t value);
         void update_bank(uint8_t value);
-        void update_mode(uint8_t value);
         void write_string(char *str);
         void write_character(char character, uint8_t position);
         void test(void);

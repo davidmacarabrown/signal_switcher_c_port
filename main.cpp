@@ -41,10 +41,8 @@ int main()
     uint8_t mode;
 
     stdio_init_all();
-    //sleep_ms(5000);
-    printf("hello mate\n");
+    sleep_ms(5000);
     
-
     i2c_init(I2C_PORT, 400000);
     gpio_set_function(I2C1_DATA, GPIO_FUNC_I2C);
     gpio_set_function(I2C1_CLOCK, GPIO_FUNC_I2C);
@@ -57,6 +55,18 @@ int main()
         gpio_set_dir(i, GPIO_IN);
         gpio_pull_down(i);
     }
+
+    instruction_handler = new InstructionHandler;
+    output_mgr = new OutputManager;
+    display_mgr = new DisplayManager(i2c1, QUAD_ADDR);
+    storage_mgr = new StorageManager(i2c1, EEPROM_ADDR);
+    state_mgr = new StateManager;
+
+    // InstructionHandler instruction_handler;
+    // OutputManager output_mgr;
+    // DisplayManager display_mgr(i2c1, QUAD_ADDR);
+    // StorageManager storage_mgr(i2c1, EEPROM_ADDR);
+    // StateManager state_mgr; 
     
     gpio_set_irq_enabled_with_callback
     (
@@ -71,27 +81,11 @@ int main()
         gpio_set_irq_enabled(i, GPIO_IRQ_EDGE_RISE, 1);
     }
 
-
-    instruction_handler = new InstructionHandler;
-    state_mgr = new StateManager;
-    output_mgr = new OutputManager;
-    display_mgr = new DisplayManager(i2c1, QUAD_ADDR);
-    storage_mgr = new StorageManager(i2c1, EEPROM_ADDR);
-
-    // InstructionHandler instruction_handler;
-    // StateManager state_mgr; 
-    // OutputManager output_mgr;
-    // DisplayManager display_mgr(i2c1, QUAD_ADDR);
-    // StorageManager storage_mgr(i2c1, EEPROM_ADDR);
-    
     //storage_mgr.test();
+    display_mgr->clear();
+    sleep_ms(200);
     display_mgr->test();
-    
-    //result = storage_mgr->validate_eeprom();
-    #ifdef DEBUG
-    printf("Eprom Validated - Result: %d\n", result);
-    #endif
-    //hang();
+
 
     instruction_handler->initialise(state_mgr, 
                                     output_mgr, 

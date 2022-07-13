@@ -24,6 +24,7 @@ class StorageManager
     public:
         StorageManager(i2c_inst_t *i2c_instance, uint8_t i2c_address);
         void initialise(StateManager *pStateManager);
+        void factory_reset(void);
 
         uint8_t validate_eeprom(void);
 

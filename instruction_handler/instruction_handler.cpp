@@ -303,7 +303,6 @@ void InstructionHandler::write_command_handler()
                 else
                 {
                     memcpy(str, "-Err", 4);
-                    pOutputManager->rapid_blink(LED_WRITE);
                 }
                 sleep_ms(500);
                 pDisplayManager->write_string(str); //TODO: Blinking???

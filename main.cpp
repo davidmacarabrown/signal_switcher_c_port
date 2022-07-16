@@ -17,6 +17,7 @@
 #include "display_manager.h"
 #include "storage_manager.h"
 #include "CAT24C32.h"
+#include "MCP23017.H"
 
 #include "debug.h"
 
@@ -28,6 +29,10 @@ uint8_t command_id;
 bool command_flag = false;
 bool irq_flag = false;
 repeating_timer_t timer;
+
+MCP23017 *output_port;
+MCP23017 *input_port;
+
 
 InstructionHandler *instruction_handler;
 StateManager *state_mgr;
@@ -41,13 +46,24 @@ int main()
     uint8_t mode;
 
     stdio_init_all();
-    sleep_ms(5000);
+    //sleep_ms(5000);
+    printf("Hello Mate\n");
+
+    i2c_init(i2c0, 400000);
+    printf("I2C0 Init Done\n");
+    fflush(stdout);
+    i2c_init(i2c1, 400000);
+    printf("I2C1 Init Done\n");fflush(stdout);
+    gpio_set_function(I2C0_DATA, GPIO_FUNC_I2C);
+    gpio_set_function(I2C0_CLOCK, GPIO_FUNC_I2C);
+    gpio_pull_up(I2C0_DATA);
+    gpio_pull_up(I2C0_CLOCK);
     
-    i2c_init(I2C_PORT, 400000);
     gpio_set_function(I2C1_DATA, GPIO_FUNC_I2C);
     gpio_set_function(I2C1_CLOCK, GPIO_FUNC_I2C);
     gpio_pull_up(I2C1_DATA);
     gpio_pull_up(I2C1_CLOCK);
+    printf("Pin i2c set\n");fflush(stdout);
 
     for(uint8_t i = SW_ONE; i<=SW_WRITE; i++)
     {
@@ -56,17 +72,30 @@ int main()
         gpio_pull_down(i);
     }
 
+    output_port = new MCP23017(i2c0, 0x20);
+    input_port = new MCP23017(i2c0, 0x21);
+
     instruction_handler = new InstructionHandler;
     output_mgr = new OutputManager;
     display_mgr = new DisplayManager(i2c1, QUAD_ADDR);
     storage_mgr = new StorageManager(i2c1, EEPROM_ADDR);
     state_mgr = new StateManager;
 
+    
+
+    printf("Created object\n");fflush(stdout);
+    output_port->test();
+    printf("Test Done\n");fflush(stdout);
+
     // InstructionHandler instruction_handler;
     // OutputManager output_mgr;
     // DisplayManager display_mgr(i2c1, QUAD_ADDR);
     // StorageManager storage_mgr(i2c1, EEPROM_ADDR);
     // StateManager state_mgr; 
+
+    display_mgr->clear();
+    sleep_ms(200);
+    display_mgr->test();
     
     gpio_set_irq_enabled_with_callback
     (
@@ -82,9 +111,7 @@ int main()
     }
 
     //storage_mgr.test();
-    display_mgr->clear();
-    sleep_ms(200);
-    display_mgr->test();
+    
 
 
     instruction_handler->initialise(state_mgr, 

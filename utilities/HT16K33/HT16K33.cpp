@@ -75,8 +75,10 @@ the display.
 ****************************************************************/
 void HT16K33::update(void)
 {
+    int bytes_written;
     data_buffer[0] = (SET_ADDRESS_PTR << 4) | ADDR_1;
-    i2c_write_blocking(i2c_instance, i2c_address, (uint8_t*)&data_buffer, sizeof(data_buffer), false);
+    bytes_written = i2c_write_blocking(i2c_instance, i2c_address, (uint8_t*)&data_buffer, sizeof(data_buffer), false);
+    printf("LED Bytes: %d\n", bytes_written);
 }
 
 

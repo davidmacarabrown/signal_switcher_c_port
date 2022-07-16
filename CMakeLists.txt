@@ -19,6 +19,7 @@ include_directories("storage_manager")
 include_directories("utilities/HT16K33")
 include_directories("display_manager")
 include_directories("utilities/CAT24C32")
+include_directories("utilities/MCP23017")
 
 #include_directories(utilities/command_input)
 

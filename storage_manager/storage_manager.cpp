@@ -297,8 +297,8 @@ uint8_t StorageManager::validate_eeprom(void)
     printf("Footer Result %d\n", footer_not_found);
     #endif
 
-    if(1)
-    //if(header_not_found || footer_not_found)
+    //if(1)
+    if(header_not_found || footer_not_found)
     {
         // TODO: maybe put something in here to inform that the pedal is doing some "setup" or whatever
         

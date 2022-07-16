@@ -22,7 +22,8 @@
 #define RELAY_FIVE         4
 #define RELAY_AMP_SW_A     5
 #define RELAY_AMP_SW_B     6
-#define LED_WRITE          7
+#define MUTE_OPTORELAY     7
+//#define LED_WRITE          7
 
 /* Most significant 7 bits are 5x pedal relays and 2 amp F/SW relays */
 #define OUTPUT_MASK       0b11111111
@@ -221,10 +222,12 @@ typedef struct bank_data_x
 
 
 /* i2c */
-#define I2C_PORT     i2c1
-#define I2C1_DATA    0x0E
-#define I2C1_CLOCK   0x0F
+#define I2C0_DATA    4
+#define I2C0_CLOCK   5
+#define I2C1_DATA    14
+#define I2C1_CLOCK   15
 #define QUAD_ADDR    0x70
 #define EEPROM_ADDR  0x50
+#define OUTPUT_PORT_I2C_ADDR 0x20
 
 #endif

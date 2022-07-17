@@ -48,16 +48,24 @@ class MCP23017
         uint8_t i2c_address;
         
         MCP23017_CONFIG_X port_config;
-
-        uint8_t port_a_state;
-        uint8_t port_b_state;
+        uint8_t port_state[2];
 
     public:
         MCP23017();
         MCP23017(i2c_inst_t *i2c_instance,  uint8_t i2c_address);
         void write_configuration(void);
-        void write_to_port(uint8_t port, uint8_t mask);
-        void test();
+        void write_mask(uint8_t port, uint8_t mask);
+        void test_output();
+        void test_input();
+
+        //read mask
+        uint8_t read_input_mask(uint8_t port);
+        //read single pin
+        
+        //write single pin
+        void write_pin(uint8_t port, uint16_t pin, uint8_t state);
+
+        void set_address_pointer(uint8_t register_location);
 
         void set_port_mode(uint8_t port_mode);
         void set_ioconfig(uint8_t io_config);

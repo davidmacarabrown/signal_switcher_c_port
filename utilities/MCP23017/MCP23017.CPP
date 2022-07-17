@@ -96,34 +96,48 @@ void MCP23017::write_configuration(void)
 }
 
 
-void MCP23017::test(void)
+void MCP23017::test_output(void)
 {
-    uint8_t test_buffer[2];
-
-    set_port_mode(1);
-    port_config.io_config = 0b10110010;
+    // set_port_mode(1);
+    // port_config.io_config = 0b10110010;
     
-    port_config.iodir_a = 0x00;
-    port_config.iodir_b = 0x00;
-    printf("Starting Test\n");
+    // port_config.iodir_a = 0x00;
+    // port_config.iodir_b = 0x00;
+    // write_configuration();
+    printf("Starting Output Test\n");
 
-    write_configuration();
-
-    write_to_port(0, 0b11110000);
-    write_to_port(1, 0b00001111);
+    write_mask(0, 0b11110000);
+    write_mask(1, 0b00001111);
 
     sleep_ms(1000);
 
-    write_to_port(0, 0);
-    write_to_port(1, 0);
-
-    // test_buffer[0] = 0x19;
-    // test_buffer[1] = 0b00001111;
-
-    // i2c_write_blocking(i2c_instance, i2c_address, test_buffer, 2, false);
+    write_mask(0, 0);
+    write_mask(1, 0);    
 }
 
-void MCP23017::write_to_port(uint8_t port, uint8_t mask)
+void MCP23017::test_input(void)
+{
+    // set_port_mode(0);
+    // port_config.io_config = 0b00101000;
+    // port_config.iodir_a = 0xFF;
+    // port_config.iodir_b = 0xFF;
+    // port_config.gppu_a = 0xFF;
+    // port_config.gppu_b = 0xFF;
+    // port_config.ipol_a = 0xFF;
+    // port_config.ipol_b = 0xFF;
+    //write_configuration();
+
+    printf("Starting Input Test\n");
+
+    while(1)
+    {
+        printf("Port A: %02x\n", read_input_mask(0));
+        printf("Port B: %02x\n", read_input_mask(1));
+        sleep_ms(1000);
+    }
+}
+
+void MCP23017::write_mask(uint8_t port, uint8_t mask)
 {
     uint8_t buffer[2];
 
@@ -138,7 +152,50 @@ void MCP23017::write_to_port(uint8_t port, uint8_t mask)
 
     buffer[1] = mask;
     i2c_write_blocking(i2c_instance, i2c_address, buffer, 2, false);
-    
+}
+
+uint8_t MCP23017::read_input_mask(uint8_t port)
+{
+    uint8_t address;
+    uint8_t data;
+
+    switch(port)
+    {
+        case 0:
+            address = register_address_lookup[port_config.port_mode][GPIOA];
+            break;
+        case 1:
+            address = register_address_lookup[port_config.port_mode][GPIOB];
+            break;
+        default:
+            break;
+    }
+
+    set_address_pointer(address);
+
+    i2c_read_blocking(i2c_instance, i2c_address, &data, 1 , false);
+    return data;
+}
+
+void MCP23017::set_address_pointer(uint8_t register_location)
+{
+    uint8_t command = register_address_lookup[port_config.port_mode][register_location];
+
+    i2c_write_blocking(i2c_instance, i2c_address, &command, 1 , false);
+}
+
+void MCP23017::write_pin(uint8_t port, uint16_t pin, uint8_t state)
+{
+     if(state)
+    {
+        port_state[port] |= (0x01 << pin);
+    }
+    else
+    {
+        port_state[port] ^= (0x00 << pin);
+    }
+
+    write_mask(port, port_state[port]);
 }
 
 void MCP23017::set_port_mode(uint8_t port_mode)

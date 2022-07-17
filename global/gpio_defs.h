@@ -15,6 +15,7 @@
 
 /* LED Indicators */
 #define PICO_LED           25
+
 #define RELAY_ONE          0
 #define RELAY_TWO          1
 #define RELAY_THREE        2
@@ -22,8 +23,9 @@
 #define RELAY_FIVE         4
 #define RELAY_AMP_SW_A     5
 #define RELAY_AMP_SW_B     6
-#define MUTE_OPTORELAY     7
-//#define LED_WRITE          7
+#define EXT_CTRL_A         7
+#define EXT_CTRL_B         8
+#define MUTE_OPTORELAY     9
 
 /* Most significant 7 bits are 5x pedal relays and 2 amp F/SW relays */
 #define OUTPUT_MASK       0b11111111

@@ -8,8 +8,11 @@
 #include "hardware/timer.h"
 #include "hardware/sync.h"
 #include "hardware/i2c.h"
+#include "pico/multicore.h"
+#include "pico/util/queue.h"
 
 /* Project Includes */
+#include "core_1.h"
 #include "gpio_defs.h"
 #include "output_manager.h"
 #include "state_manager.h"
@@ -30,41 +33,30 @@ bool command_flag = false;
 bool irq_flag = false;
 repeating_timer_t timer;
 
-MCP23017 *output_port;
-MCP23017 *input_port;
-
-
 InstructionHandler *instruction_handler;
 StateManager *state_mgr;
 OutputManager *output_mgr;
 DisplayManager *display_mgr;
 StorageManager *storage_mgr;
 
+queue_t *intra_core_queue_tx = new queue_t;
+queue_t *intra_core_queue_rx = new queue_t;
+
 int main()
 {   
     stdio_init_all();
-
-#ifdef DEBUG
     sleep_ms(5000);
-    printf("Hello Mate\n");
-#endif
 
-    i2c_init(i2c0, 400000);
+    queue_init_with_spinlock(intra_core_queue_tx, 1, 5, 1);
+    queue_init_with_spinlock(intra_core_queue_rx, 1, 5, 1);
 
-#ifdef DEBUG
-    printf("I2C0 Init Done\n");
-    fflush(stdout);
-#endif
+    multicore_launch_core1(core_1_main);
 
     i2c_init(i2c1, 400000);
-
 #ifdef DEBUG
     printf("I2C1 Init Done\n");fflush(stdout);
+    fflush(stdout);
 #endif
-    gpio_set_function(I2C0_DATA, GPIO_FUNC_I2C);
-    gpio_set_function(I2C0_CLOCK, GPIO_FUNC_I2C);
-    gpio_pull_up(I2C0_DATA);
-    gpio_pull_up(I2C0_CLOCK);
     
     gpio_set_function(I2C1_DATA, GPIO_FUNC_I2C);
     gpio_set_function(I2C1_CLOCK, GPIO_FUNC_I2C);
@@ -75,41 +67,36 @@ int main()
     printf("i2c Pins set\n");fflush(stdout);
 #endif
 
-    output_port = new MCP23017(i2c0, 0x20);
-    input_port = new MCP23017(i2c0, 0x21);
-
     instruction_handler = new InstructionHandler;
     output_mgr = new OutputManager;
     display_mgr = new DisplayManager(i2c1, QUAD_ADDR);
     storage_mgr = new StorageManager(i2c1, EEPROM_ADDR);
     state_mgr = new StateManager;
+    printf("Objects Created\n");
 
-    /* Port Configurations */
-    output_port->set_port_mode(1);
-    output_port->set_ioconfig(0b10110010);
-    output_port->set_iodir_a(0x00);
-    output_port->set_iodir_b(0x00);
-    output_port->write_configuration();
+    printf("Passing Queue pointer to core1\n");
+    multicore_fifo_push_blocking((uint32_t)intra_core_queue_tx);
+    multicore_fifo_push_blocking((uint32_t)intra_core_queue_rx);
+    printf("Done\n");
 
-    input_port->set_port_mode(0);
-    input_port->set_ioconfig(0b00101000);
-    input_port->set_iodir_a(0xFF);
-    input_port->set_iodir_b(0xFF);
-    input_port->set_gppu_a (0xFF);
-    input_port->set_gppu_b (0xFF);
-    input_port->set_ipol_a (0xFF);
-    input_port->set_ipol_b (0xFF);
-    input_port->write_configuration();
+    uint8_t send = 0;
 
     while(1)
-    {
-        output_port->write_mask(0, input_port->read_input_mask(1));
-        sleep_ms(16);
-    }
+    {        
+        if(queue_try_remove(intra_core_queue_rx, &send))
+        {
+            printf("Core 0: [%02X]\n", send);
+            queue_try_add(intra_core_queue_tx, &send);
+        }   
+        else
+        {
+            send = 0;
+        }
 
-    output_port->test_output();
-    input_port->test_input();
-    printf("Test Done\n");fflush(stdout);
+        sleep_ms(100);
+    }
+    /* TODO: Move output manager to other core? 
+             Create object to manage the ports/decode the messages from the queue if output manager is staying on core 0 */
 
     display_mgr->clear();
     sleep_ms(200);
@@ -122,7 +109,6 @@ int main()
                                     &command_flag, 
                                     &irq_flag);
                                          
-    output_mgr->initialise(state_mgr, output_port);
     state_mgr->initialise(storage_mgr);
     storage_mgr->initialise(state_mgr);
     display_mgr->initialise(state_mgr);
@@ -158,3 +144,4 @@ int main()
 //         irq_flag = true;
 //     }
 // }
+

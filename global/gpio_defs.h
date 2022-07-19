@@ -105,6 +105,13 @@ const char mode_lookup[] = {77, 80, 87};
 #define BANK_UP    (SW_TWO + SW_THREE)
 #define OPEN_MENU  (SW_MODE + SW_WRITE)
 
+/* Queue Structure */
+struct queue_item
+{
+    uint8_t direction;
+    uint8_t port_num;
+    uint8_t mask;
+};
 
 /* Command Buffer */
 #define COM_BUF_CAP 2

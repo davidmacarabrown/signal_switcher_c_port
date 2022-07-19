@@ -98,12 +98,6 @@ void MCP23017::write_configuration(void)
 
 void MCP23017::test_output(void)
 {
-    // set_port_mode(1);
-    // port_config.io_config = 0b10110010;
-    
-    // port_config.iodir_a = 0x00;
-    // port_config.iodir_b = 0x00;
-    // write_configuration();
     printf("Starting Output Test\n");
 
     write_mask(0, 0b11110000);
@@ -117,16 +111,6 @@ void MCP23017::test_output(void)
 
 void MCP23017::test_input(void)
 {
-    // set_port_mode(0);
-    // port_config.io_config = 0b00101000;
-    // port_config.iodir_a = 0xFF;
-    // port_config.iodir_b = 0xFF;
-    // port_config.gppu_a = 0xFF;
-    // port_config.gppu_b = 0xFF;
-    // port_config.ipol_a = 0xFF;
-    // port_config.ipol_b = 0xFF;
-    //write_configuration();
-
     printf("Starting Input Test\n");
 
     while(1)

@@ -20,6 +20,7 @@ include_directories("utilities/HT16K33")
 include_directories("display_manager")
 include_directories("utilities/CAT24C32")
 include_directories("utilities/MCP23017")
+include_directories("core_1")
 
 #include_directories(utilities/command_input)
 
@@ -44,6 +45,8 @@ target_link_libraries(main
     hardware_flash
     hardware_sync
     hardware_i2c
+    pico_multicore
+    pico_util
     )
 
 pico_enable_stdio_usb(main 1)

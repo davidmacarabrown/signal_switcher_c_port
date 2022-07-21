@@ -24,32 +24,24 @@
 
 #include "debug.h"
 
-void input_detect_callback(uint gpio, uint32_t events);
-void startup_routine(void);
-
-//void check_for_command_input(repeating_timer *t, bool *command_flag, bool *interrupt_in_progress);
-uint8_t command_id;
-bool command_flag = false;
-bool irq_flag = false;
-repeating_timer_t timer;
-
 InstructionHandler *instruction_handler;
 StateManager *state_mgr;
 OutputManager *output_mgr;
 DisplayManager *display_mgr;
 StorageManager *storage_mgr;
 
-queue_t *intra_core_queue_tx = new queue_t;
-queue_t *intra_core_queue_rx = new queue_t;
+queue_t *core_0_queue_tx = new queue_t;
+queue_t *core_0_queue_rx = new queue_t;
+
 
 int main()
 {   
     stdio_init_all();
     sleep_ms(5000);
 
-    queue_init_with_spinlock(intra_core_queue_tx, 1, 5, 1);
-    queue_init_with_spinlock(intra_core_queue_rx, 1, 5, 1);
-
+    queue_init_with_spinlock(core_0_queue_tx, sizeof(QUEUE_ITEM_X), 5, 1);
+    queue_init_with_spinlock(core_0_queue_rx, sizeof(QUEUE_ITEM_X), 5, 1);
+    
     multicore_launch_core1(core_1_main);
 
     i2c_init(i2c1, 400000);
@@ -72,29 +64,18 @@ int main()
     display_mgr = new DisplayManager(i2c1, QUAD_ADDR);
     storage_mgr = new StorageManager(i2c1, EEPROM_ADDR);
     state_mgr = new StateManager;
+
+#ifdef DEBUG
     printf("Objects Created\n");
-
     printf("Passing Queue pointer to core1\n");
-    multicore_fifo_push_blocking((uint32_t)intra_core_queue_tx);
-    multicore_fifo_push_blocking((uint32_t)intra_core_queue_rx);
+#endif
+
+    multicore_fifo_push_blocking((uint32_t)core_0_queue_rx);
+    multicore_fifo_push_blocking((uint32_t)core_0_queue_tx);
+    
+#ifdef DEBUG
     printf("Done\n");
-
-    uint8_t send = 0;
-
-    while(1)
-    {        
-        if(queue_try_remove(intra_core_queue_rx, &send))
-        {
-            printf("Core 0: [%02X]\n", send);
-            queue_try_add(intra_core_queue_tx, &send);
-        }   
-        else
-        {
-            send = 0;
-        }
-
-        sleep_ms(100);
-    }
+#endif
     /* TODO: Move output manager to other core? 
              Create object to manage the ports/decode the messages from the queue if output manager is staying on core 0 */
 
@@ -106,8 +87,8 @@ int main()
                                     output_mgr, 
                                     display_mgr, 
                                     storage_mgr,
-                                    &command_flag, 
-                                    &irq_flag);
+                                    core_0_queue_tx,
+                                    core_0_queue_rx);
                                          
     state_mgr->initialise(storage_mgr);
     storage_mgr->initialise(state_mgr);
@@ -115,33 +96,11 @@ int main()
 
     instruction_handler->startup_routine();
 
-    //add_repeating_timer_ms(16, check_for_input, NULL, &timer);
-    //gpio_put(PICO_LED, HIGH);
-
     while(true)
     {
-        //printf("running\n"); fflush(stdout);
-        //instruction handler decode input
-        
-        /* 
-        TODO: Call InstructionHandler::update()
-        Implement state to hold the command, and whether or not it has been processed.
-        Once processed and executed set this back to false.
-        */
-        
-        //printf("MASK: %d\n", gpio_get_all());
-
-        instruction_handler->check_for_command_input();
+        instruction_handler->read_queue();
         sleep_ms(16);
     }
 }
 
-// void input_detect_callback(uint gpio, uint32_t events)
-// {
-//     if(command_flag == false && irq_flag == false)
-//     {
-//         command_flag = true;
-//         irq_flag = true;
-//     }
-// }
 

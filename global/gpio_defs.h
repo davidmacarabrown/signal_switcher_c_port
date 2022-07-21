@@ -9,6 +9,8 @@
 /* This file defines GPIO macros, structures and data storage offsets */
 #define DEBUG
 
+#define CORE0 0
+
 /* CTRL Types */
 #define MOMENTARY 0
 #define LATCHING 1
@@ -53,19 +55,31 @@
 #define NUM_PATCHES   5
 #define TOTAL_PATCHES 25
 
-/* Bit Mask for decoding gpio_get_all() bit mask into commands */
-#define GPIO_SWITCH_MASK 0b000000000011111110000000000000000                        
-#define SW_1_MASK        0x10000 /* 65,536 */ 
-#define SW_2_MASK        0x20000 /* 131,072 */
-#define SW_3_MASK        0x40000 /* 262,144 */
-#define SW_4_MASK        0x80000 /* 524,288 */
-#define SW_5_MASK        0x100000 /* 1,048,576 */
+/* Queue Structure */
+typedef struct queue_item_x
+{
+    uint8_t instruction_code;
+    uint8_t data[32];
+} QUEUE_ITEM_X;
 
-#define SW_MODE_MASK     0x200000 /* 2,097,152 */
-#define SW_WRITE_MASK    0x400000 /* 4,194,304 */
+/* Command Decode Values */
+#define PORT_OUTPUT 0xA0
+#define PORT_INPUT  0xA1
 
-#define PATCH_INC_MASK   0x60000 /* 393,216 */
-#define PATCH_DEC_MASK   0x30000 /* 196,608 */
+/* Port A */                    
+#define SW_1_MASK       0x01
+#define SW_2_MASK       0x02
+#define SW_3_MASK       0x04
+#define SW_4_MASK       0x08
+#define SW_5_MASK       0x16
+#define FSW_A_MASK      0x32
+#define FSW_B_MASK      0x64
+#define PATCH_INC_MASK  0x03
+#define PATCH_DEC_MASK  0x06
+
+/* Port B */
+#define SW_MODE_MASK    0x01
+#define SW_WRITE_MASK   0x02
 
 #define CHAR_A 0x41
 #define CHAR_B 0x42
@@ -99,27 +113,6 @@ const char bank_lookup[] = {CHAR_A, CHAR_B, CHAR_C, CHAR_D, CHAR_E};
 
 /* Array to provide ASCII character lookup for modes... e.g. MANUAL = 0, mode_lookup[0] = ASCII value for M - 77 */
 const char mode_lookup[] = {77, 80, 87};
-
-/* Multiple Input Command Codes */
-#define BANK_DOWN  (SW_ONE + SW_TWO)
-#define BANK_UP    (SW_TWO + SW_THREE)
-#define OPEN_MENU  (SW_MODE + SW_WRITE)
-
-/* Queue Structure */
-struct queue_item
-{
-    uint8_t direction;
-    uint8_t port_num;
-    uint8_t mask;
-};
-
-/* Command Buffer */
-#define COM_BUF_CAP 2
-typedef struct com_buffer_x
-{
-    uint32_t command;
-    bool command_flag;
-} COM_BUFFER_X;
 
 /* 2 Bytes: Channel, Data */
 typedef struct midi_pc_data_x
@@ -239,4 +232,7 @@ typedef struct bank_data_x
 #define EEPROM_ADDR  0x50
 #define OUTPUT_PORT_I2C_ADDR 0x20
 
+/* Port Interrupt Pins */
+#define PORTA_INTERRUPT 2
+#define PORTB_INTERRUPT 3
 #endif

@@ -66,10 +66,10 @@ Return:     void
 
 Toggles a single output state index position to the opposite.
 ****************************************************************/
-void StateManager::toggle_single_output_state(uint8_t index)
+void StateManager::toggle_single_output_state(uint8_t position)
 {
     uint8_t new_mask;
-    uint8_t xor_mask = (OUTPUT_SHIFT_MASK << index);
+    uint8_t xor_mask = (OUTPUT_SHIFT_MASK << position);
     printf("XOR Mask: %02x\n", xor_mask); 
     new_mask = output_mask ^ xor_mask;
     printf("OUTPUT Mask: %02x\n", new_mask);

@@ -1,28 +1,49 @@
+/* C Includes */
+#include <stdio.h>
+#include <memory.h>
+
+/* Pico SDK Includes */
+#include "pico/multicore.h"
+#include "pico/util/queue.h"
+
+/* Project Includes */
 #include "core_1.h"
+#include "gpio_defs.h"
+#include "MCP23017.H"
+
 
 MCP23017 *input_port;
 MCP23017 *output_port;
 
-queue_t* intra_core_queue_rx;
-queue_t* intra_core_queue_tx;
+queue_t* core_1_queue_rx;
+queue_t* core_1_queue_tx;
 
-bool input_latch;
+QUEUE_ITEM_X queue_store;
+
+uint8_t port_value = 0;
+
+void port_interrupt_callback(uint32_t gpio, uint32_t events);
 
 void core_1_main(void)
 {
-    uint8_t mask_a = 0;
-    uint8_t mask_b = 0;
-    uint8_t payload = 0;
+    i2c_init(i2c0, 400000);
 
-        i2c_init(i2c0, 400000);
 #ifdef DEBUG
     printf("I2C0 Init Done\n");
 #endif
 
+    /* GPIO Configuration */
     gpio_set_function(I2C0_DATA, GPIO_FUNC_I2C);
     gpio_set_function(I2C0_CLOCK, GPIO_FUNC_I2C);
     gpio_pull_up(I2C0_DATA);
     gpio_pull_up(I2C0_CLOCK);
+    gpio_init(PORTA_INTERRUPT);
+    gpio_init(PORTB_INTERRUPT);
+    gpio_set_dir(PORTA_INTERRUPT, GPIO_IN);
+    gpio_set_dir(PORTB_INTERRUPT, GPIO_IN);
+
+    gpio_set_irq_enabled_with_callback(PORTA_INTERRUPT, GPIO_IRQ_EDGE_FALL, true, (gpio_irq_callback_t)port_interrupt_callback);
+    gpio_set_irq_enabled(PORTB_INTERRUPT, GPIO_IRQ_EDGE_FALL, true);
 
     /* Port Configurations */
     input_port = new MCP23017(i2c0, 0x21);
@@ -35,64 +56,61 @@ void core_1_main(void)
     input_port->set_gppu_b (0xFF);
     input_port->set_ipol_a (0xFF);
     input_port->set_ipol_b (0xFF);
+    input_port->set_intcon_a(0xFF);
+    input_port->set_intcon_b(0xFF);
     input_port->write_configuration();
 
     output_port = new MCP23017(i2c0, 0x20);
 
-    output_port->set_port_mode(1);
-    output_port->set_ioconfig(0b10110010);
+    output_port->set_port_mode(0);
+    output_port->set_ioconfig(0b00111000);
     output_port->set_iodir_a(0x00);
     output_port->set_iodir_b(0x00);
     output_port->write_configuration();
 
     /* Tx/Rx Queue */
-    intra_core_queue_rx = (queue_t *)multicore_fifo_pop_blocking();
-    intra_core_queue_tx = (queue_t *)multicore_fifo_pop_blocking();
+    core_1_queue_rx = (queue_t *)multicore_fifo_pop_blocking();
+    core_1_queue_tx = (queue_t *)multicore_fifo_pop_blocking();
 
     while(1)
     {
-        mask_a = input_port->read_input_mask(PORTA);
-        mask_b = input_port->read_input_mask(PORTB);
-
-        if(mask_a || mask_b)
+        if(queue_try_remove(core_1_queue_rx, &queue_store))
         {
-            printf("Detected Input\n");
-            sleep_ms(50);
-            mask_a = input_port->read_input_mask(PORTA);
-            mask_b = input_port->read_input_mask(PORTB);
-
-            if((mask_a || mask_b) && (input_latch == false))
-            {
-                if(mask_a)
-                {
-                    queue_try_add(intra_core_queue_tx, &mask_a);
-                    printf("Core 1: %02x\n", mask_a);
-                }
-                else
-                {
-                    queue_try_add(intra_core_queue_tx, &mask_b);
-                }
-                
-                input_latch = true;
-            }
-        }
-
-        if((!mask_a) && (!mask_b))
-        {
-            input_latch = false;
-        }
-
-
-        if(queue_try_remove(intra_core_queue_rx, &payload))
-        {
-            printf("Payload: %02X", payload);
+            // do something with the payload
         }
         else
         {
-            payload = 0;
+            memset(&queue_store, 0, sizeof(QUEUE_ITEM_X));
         }
-
-        sleep_ms(100);
-
     }
+}
+
+void port_interrupt_callback(uint32_t gpio, uint32_t events)
+{
+    QUEUE_ITEM_X command;
+    
+    command.instruction_code = PORT_INPUT;
+
+#ifdef DEBUG
+    printf("Detected Input\n");
+#endif
+
+    sleep_ms(50);
+
+    switch(gpio)
+    {
+        case PORTA_INTERRUPT:
+            port_value = input_port->read_input_mask(PORTA);
+            command.data[0] = PORTA;
+            break;
+        case PORTB_INTERRUPT:
+            port_value = input_port->read_input_mask(PORTB);
+            command.data[0] = PORTB;
+            break;
+        default:
+            break;
+    }
+
+    command.data[1] = port_value;
+    queue_try_add(core_1_queue_tx, &port_value);
 }
